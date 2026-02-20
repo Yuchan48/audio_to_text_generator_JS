@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <p id="recording-status">Ready...</p>
+    <div class="container">
+      <button id="start-record">start</button>
+      <button id="stop-record">stop</button>
+    </div>
+    <div class="audio-clips-container"></div>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const startRecordButton = document.getElementById("start-record");
+        const stopRecordButton = document.getElementById("stop-record");
+        const recordingStatusText = document.getElementById("recording-status");
+        const audioClipsContainer = document.getElementById(
+          "audio-clips-container",
+        );
+        let mediaRecorder;
+        let audioChunks = [];
+
+        startRecordButton.addEventListener("click", async () => {
+          try {
+            recordingStatusText.innerText = "Recording...";
+
+            if (navigator.mediaDevices.getUserMedia) {
+              const constraints = { audio: true };
+              const stream =
+                await navigator.mediaDevices.getUserMedia(constraints);
+
+              mediaRecorder = new MediaRecorder(stream);
+
+              mediaRecorder.start();
+
+              mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+              };
+            } else {
+              throw new Error("getUserMedia is not supported in this browser");
+            }
+          } catch (error) {
+            console.error("Error accessing microphone:", error);
+            recordingStatusText.textContent = "Error accessing microphone";
+          }
+        });
+        stopRecordButton.addEventListener("click", async () => {
+          try {
+            recordingStatusText.innerText = "Stopped Recording...";
+
+            mediaRecorder.stop();
+
+            mediaRecorder.onstop = (e) => {
+              const audioClip = document.createElement("audio");
+
+              audioClip.setAttribute("controls", "");
+
+              console.log("audioClipsContainer:", audioClipsContainer);
+
+              audioClipsContainer.appendChild(audioClip);
+
+              const blob = new Blob(audioChunks, {
+                type: "audio/mp3; codecs=opus",
+              });
+
+              audioChunks = [];
+              const audioUrl = window.URL.createObjectURL(blob);
+              audioClip.src = audioUrl;
+            };
+
+            setTimeout(() => {
+              recordingStatusText.innerText = "Ready...";
+            }, 1000);
+            /* mediaRecorder.stop();
+                recordingStatusText.textContent = "Stopped"; */
+          } catch (error) {
+            console.error("Error stopping recording:", error);
+            recordingStatusText.textContent = "Error stopping recording";
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
