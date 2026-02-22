@@ -66,12 +66,12 @@
               type: "audio/mp3; codecs=opus",
             });
 
-            const data = new FormData();
-            data.append("audio", blob);
+            const formData = new FormData();
+            formData.append("audio", blob);
 
             const res = await axios.post(
               `http://localhost:${PORT}/upload`,
-              data,
+              formData,
             );
 
             // console.log("res = ", res);
