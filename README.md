@@ -1,7 +1,6 @@
-# Audio-to-Text Generator (WIP)
+# Audio Recorder App
 
-This is a very small browser-based prototype that records audio from your
-microphone and attempts to convert it to text in real time.
+A web-based audio recorder using MediaRecorder API.
 The project is still a work-in-progress – right now it mainly sets up the
 UI and basic recording logic.
 
@@ -42,13 +41,11 @@ UI and basic recording logic.
    Click the “record” button and speak. The recorded audio will be processed
    client-side and text should appear (once the feature is implemented).
 
-## 🛠️ Features (planned)
+## 🛠️ Features
 
-- 🎙️ Start/stop audio recording in the browser
-- 🧠 Send audio to a transcription service or use a client-side model
-- 📝 Display live transcription text
-- 🔁 Support for multiple languages
-- 👀 Visual feedback (waveform, status)
+- Start/stop audio recording in the browser
+- Stop and save recordings
+- Play recordings in browser
 
 ## 🧩 Development notes
 
@@ -59,7 +56,7 @@ UI and basic recording logic.
 
 ## Development Notes
 
-For a detailed breakdown of challenges I faced and how I solved them, see [PROGRESS.md](./PROGRESS.md)
+For a detailed breakdown of my development process and challenges/solutions, see [PROGRESS.md](./PROGRESS.md)
 
 ## 📄 License
 

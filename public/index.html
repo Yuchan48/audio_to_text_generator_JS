@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>Audio to Text Generator</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
   </head>
   <body>
     <p id="recording-status">Ready...</p>
@@ -11,77 +12,92 @@
       <button id="start-record">start</button>
       <button id="stop-record">stop</button>
     </div>
-    <div class="audio-clips-container"></div>
+    <div id="audio-clips-container"></div>
+
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const startRecordButton = document.getElementById("start-record");
-        const stopRecordButton = document.getElementById("stop-record");
-        const recordingStatusText = document.getElementById("recording-status");
-        const audioClipsContainer = document.getElementById(
-          "audio-clips-container",
-        );
-        let mediaRecorder;
-        let audioChunks = [];
+      const PORT = 8888;
+      const startRecordButton = document.getElementById("start-record");
+      const stopRecordButton = document.getElementById("stop-record");
+      const recordingStatusText = document.getElementById("recording-status");
+      const audioClipsContainer = document.getElementById(
+        "audio-clips-container",
+      );
+      let mediaRecorder;
+      let audioChunks = [];
 
-        startRecordButton.addEventListener("click", async () => {
-          try {
-            recordingStatusText.innerText = "Recording...";
+      startRecordButton.addEventListener("click", async () => {
+        try {
+          recordingStatusText.innerText = "Recording...";
 
-            if (navigator.mediaDevices.getUserMedia) {
-              const constraints = { audio: true };
-              const stream =
-                await navigator.mediaDevices.getUserMedia(constraints);
+          if (navigator.mediaDevices.getUserMedia) {
+            const constraints = { audio: true };
+            const stream =
+              await navigator.mediaDevices.getUserMedia(constraints);
 
-              mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder = new MediaRecorder(stream);
 
-              mediaRecorder.start();
+            mediaRecorder.start();
 
-              mediaRecorder.ondataavailable = (event) => {
-                audioChunks.push(event.data);
-              };
-            } else {
-              throw new Error("getUserMedia is not supported in this browser");
-            }
-          } catch (error) {
-            console.error("Error accessing microphone:", error);
-            recordingStatusText.textContent = "Error accessing microphone";
-          }
-        });
-        stopRecordButton.addEventListener("click", async () => {
-          try {
-            recordingStatusText.innerText = "Stopped Recording...";
-
-            mediaRecorder.stop();
-
-            mediaRecorder.onstop = (e) => {
-              const audioClip = document.createElement("audio");
-
-              audioClip.setAttribute("controls", "");
-
-              console.log("audioClipsContainer:", audioClipsContainer);
-
-              audioClipsContainer.appendChild(audioClip);
-
-              const blob = new Blob(audioChunks, {
-                type: "audio/mp3; codecs=opus",
-              });
-
-              audioChunks = [];
-              const audioUrl = window.URL.createObjectURL(blob);
-              audioClip.src = audioUrl;
+            mediaRecorder.ondataavailable = (event) => {
+              audioChunks.push(event.data);
             };
-
-            setTimeout(() => {
-              recordingStatusText.innerText = "Ready...";
-            }, 1000);
-            /* mediaRecorder.stop();
-                recordingStatusText.textContent = "Stopped"; */
-          } catch (error) {
-            console.error("Error stopping recording:", error);
-            recordingStatusText.textContent = "Error stopping recording";
+          } else {
+            throw new Error("getUserMedia is not supported in this browser");
           }
-        });
+        } catch (error) {
+          console.error("Error accessing microphone:", error);
+          recordingStatusText.textContent = "Error accessing microphone";
+        }
       });
+      stopRecordButton.addEventListener("click", async () => {
+        try {
+          recordingStatusText.innerText = "Stopped Recording...";
+
+          mediaRecorder.stop();
+
+          mediaRecorder.onstop = async (e) => {
+            // <audio controls></audio>
+            const audioClip = document.createElement("audio");
+            audioClip.setAttribute("controls", "");
+
+            audioClipsContainer.appendChild(audioClip);
+
+            const blob = new Blob(audioChunks, {
+              type: "audio/mp3; codecs=opus",
+            });
+
+            const data = new FormData();
+            data.append("audio", blob);
+
+            const res = await axios.post(
+              `http://localhost:${PORT}/upload`,
+              data,
+            );
+
+            // console.log("res = ", res);
+
+            // add the transcribed text to the browser
+            const audiotext = res.data.result;
+            const textElement = document.createElement("p");
+            textElement.innerText = audiotext;
+            audioClipsContainer.appendChild(textElement);
+
+            audioChunks = [];
+
+            // const audioUrl = window.URL.createObjectURL(blob);
+            const audioUrl = res.data.link;
+            audioClip.src = audioUrl;
+          };
+
+          setTimeout(() => {
+            recordingStatusText.innerText = "Ready...";
+          }, 1000);
+        } catch (error) {
+          console.error("Error stopping recording:", error);
+          recordingStatusText.textContent = "Error stopping recording";
+        }
+      });
+      // });
     </script>
   </body>
 </html>
