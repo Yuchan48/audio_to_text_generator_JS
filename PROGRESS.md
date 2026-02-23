@@ -108,15 +108,38 @@ Implemented the backend logic to **receive audio recordings from the frontend**,
 
 This step focused solely on user interface improvements to make the app visually appealing without changing core functionality. All logic remains the same; only structure and styling were enhanced.
 
-## [Day 4 – Delete Functionality]
+## [Day 4 – Delete Endpoint & Repository Cleanup]
 
 ### Enhancements Implemented
 
 - Implemented a delete button on each clip card; clicking it removes the card from the UI and issues a DELETE request to the server to remove the corresponding audio file.
+- Updated `.gitignore` to prevent recorded audio files from being pushed to the GitHub repository while preserving the folder structure.
+
+---
 
 ### Notes
 
 The backend now exposes a `DELETE /audio/:filename` endpoint, and cards include a confirmation button hooked up to it.
+
+---
+
+### Challenges & Solutions
+
+#### Challenge: Git does not track empty folders
+
+**Problem:**
+After ignoring audio files, the `/public/audio` folder would not appear in the repository because Git does not track empty directories.
+
+**Solution:**
+Added a `.gitkeep` file inside `/public/audio/` so the folder structure remains in the repo.
+
+```gitignore
+/public/audio/*
+!/public/audio/.gitkeep
+```
+
+**Lesson Learned:**
+Git tracks files, not directories. Using `.gitkeep` is a standard way to preserve required folders in a project.
 
 ### Future Feature Ideas
 
