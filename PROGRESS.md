@@ -110,33 +110,13 @@ This step focused solely on user interface improvements to make the app visually
 
 ## [Day 4 – Delete Functionality]
 
+### Enhancements Implemented
+
 - Implemented a delete button on each clip card; clicking it removes the card from the UI and issues a DELETE request to the server to remove the corresponding audio file.
 
 ### Notes
 
 The backend now exposes a `DELETE /audio/:filename` endpoint, and cards include a confirmation button hooked up to it.
-
-### Enhancements Implemented
-
-- Added a clean, modern layout using CSS (cards for recorded clips, styled buttons, responsive container).
-- Included Google Fonts and improved typography for readability.
-- Updated HTML structure with heading and better element organization.
-- Styled status text and added hover effects to buttons for better UX.
-- Support for multiple clip cards; each recording creates its own card with audio and transcription.
-- Extracted styles into `styles.css` file and added logging/fallback so transcription text is always appended and visible.
-- Added verbose console logging around upload/response and guarded against null values to help diagnose missing transcription issues.
-
-### Challenges & Solutions
-
-**Issue:** After recording/upload, the clip card containing the audio player and transcript was not added to the DOM, so users never saw the transcription.
-
-**Fix:** Inserted `audioClipsContainer.appendChild(clipCard)` after building the card, ensuring both audio and text appear.
-
-**Reflection:** This highlighted the importance of verifying that dynamic elements are actually attached to the page when debugging invisible output.
-
-### Notes
-
-This step focused solely on user interface improvements to make the app visually appealing without changing core functionality. All logic remains the same; only structure and styling were enhanced.
 
 ### Future Feature Ideas
 
