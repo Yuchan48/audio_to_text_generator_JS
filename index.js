@@ -57,6 +57,20 @@ app.post("/upload", upload.single("audio"), async (req, res) => {
   });
 });
 
+// Endpoint to delete an audio file (and allow frontend to remove its card)
+app.delete('/audio/:filename', (req, res) => {
+  const filename = path.basename(req.params.filename); // sanitize
+  const filePath = path.join(__dirname, 'public', 'audio', filename);
+
+  fs.unlink(filePath, (err) => {
+    if (err) {
+      console.error('Error deleting file', filePath, err);
+      return res.status(500).send({ success: false, error: 'Failed to delete file' });
+    }
+    res.send({ success: true });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

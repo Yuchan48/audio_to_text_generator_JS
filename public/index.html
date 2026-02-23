@@ -114,19 +114,39 @@
               console.log("response data", res.data);
               audiotext = res.data.result || res.data.transcript || "";
             }
-            console.log("transcript text:", audiotext);
+            // console.log("transcript text:", audiotext);
 
             const textElement = document.createElement("p");
             textElement.innerText = audiotext || "(no transcription)";
             clipCard.appendChild(textElement);
+
+            // set the audio source URL (needed for delete button logic below)
+            const audioUrl = res && res.data ? res.data.link : "";
+            audioClip.src = audioUrl;
+
+            // delete button for removing card and backend file
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "Delete";
+            deleteBtn.style.marginTop = "0.5rem";
+            deleteBtn.addEventListener("click", async () => {
+              // determine filename from audioUrl
+              const filename = audioUrl.split("/").pop();
+              try {
+                await axios.delete(
+                  `http://localhost:${PORT}/audio/${filename}`,
+                );
+                clipCard.remove();
+              } catch (e) {
+                console.error("Failed to delete file", e);
+                alert("Could not delete audio file");
+              }
+            });
+            clipCard.appendChild(deleteBtn);
 
             // append the completed card so it's visible on the page
             audioClipsContainer.appendChild(clipCard);
 
             audioChunks = [];
-
-            const audioUrl = res && res.data ? res.data.link : "";
-            audioClip.src = audioUrl;
           };
           setTimeout(() => {
             recordingStatusText.innerText = "Ready...";
@@ -136,99 +156,6 @@
           recordingStatusText.textContent = "Error stopping recording";
         }
       });
-      // });
-    </script>
-      const PORT = 8888;
-      const startRecordButton = document.getElementById("start-record");
-      const stopRecordButton = document.getElementById("stop-record");
-      const recordingStatusText = document.getElementById("recording-status");
-      const audioClipsContainer = document.getElementById(
-        "audio-clips-container",
-      );
-      let mediaRecorder;
-      let audioChunks = [];
-
-      startRecordButton.addEventListener("click", async () => {
-        try {
-          recordingStatusText.innerText = "Recording...";
-
-          if (navigator.mediaDevices.getUserMedia) {
-            const constraints = { audio: true };
-            const stream =
-              await navigator.mediaDevices.getUserMedia(constraints);
-
-            mediaRecorder = new MediaRecorder(stream);
-
-            mediaRecorder.start();
-
-            mediaRecorder.ondataavailable = (event) => {
-              audioChunks.push(event.data);
-            };
-          } else {
-            throw new Error("getUserMedia is not supported in this browser");
-          }
-        } catch (error) {
-          console.error("Error accessing microphone:", error);
-          recordingStatusText.textContent = "Error accessing microphone";
-        }
-      });
-      stopRecordButton.addEventListener("click", async () => {
-        try {
-          recordingStatusText.innerText = "Stopped Recording...";
-
-          mediaRecorder.stop();
-
-          mediaRecorder.onstop = async (e) => {
-            const clipCard = document.createElement("div");
-            clipCard.className = "clip-card";
-
-            const audioClip = document.createElement("audio");
-            audioClip.setAttribute("controls", "");
-            clipCard.appendChild(audioClip);
-
-            const blob = new Blob(audioChunks, {
-              type: "audio/mp3; codecs=opus",
-            });
-
-            const formData = new FormData();
-            formData.append("audio", blob);
-
-            const res = await axios
-              .post(`http://localhost:${PORT}/upload`, formData)
-              .catch((e) => {
-                console.error("upload error", e);
-                return null;
-              });
-
-            console.log("upload response", res);
-            let audiotext = "";
-            if (res && res.data) {
-              console.log("response data", res.data);
-              audiotext = res.data.result || res.data.transcript || "";
-            }
-            console.log("transcript text:", audiotext);
-
-            const textElement = document.createElement("p");
-            textElement.innerText = audiotext || "(no transcription)";
-            clipCard.appendChild(textElement);
-
-            // add the card to the page so the user can see it
-            audioClipsContainer.appendChild(clipCard);
-
-            audioChunks = [];
-
-            const audioUrl = res && res.data ? res.data.link : "";
-            audioClip.src = audioUrl;
-          };
-          setTimeout(() => {
-            recordingStatusText.innerText = "Ready...";
-          }, 1000);
-        } catch (error) {
-          console.error("Error stopping recording:", error);
-          recordingStatusText.textContent = "Error stopping recording";
-        }
-      });
-      // });
     </script>
   </body>
 </html>
