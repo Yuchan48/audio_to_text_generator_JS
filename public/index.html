@@ -1,20 +1,143 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Basic meta tags for proper rendering and touch zooming -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Audio to Text Generator</title>
+
+    <!-- Preconnect to Google Fonts for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Import Inter font for clean typography -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Axios used for HTTP requests to the backend -->
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <!-- Link to external CSS file containing all style rules -->
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <!-- Main heading for the application -->
+    <h1>Audio to Text Generator</h1>
+
+    <!-- Status text updates as user starts/stops recording -->
     <p id="recording-status">Ready...</p>
+
+    <!-- Control buttons for recording. Wrapped in a flex container for layout -->
     <div class="container">
-      <button id="start-record">start</button>
-      <button id="stop-record">stop</button>
+      <button id="start-record">Start</button>
+      <button id="stop-record">Stop</button>
     </div>
+
+    <!-- Placeholder where generated clip cards will be appended -->
     <div id="audio-clips-container"></div>
 
     <script>
+      // Constants and element references
+      const PORT = 8888;
+      const startRecordButton = document.getElementById("start-record");
+      const stopRecordButton = document.getElementById("stop-record");
+      const recordingStatusText = document.getElementById("recording-status");
+      const audioClipsContainer = document.getElementById(
+        "audio-clips-container",
+      );
+      let mediaRecorder;
+      let audioChunks = [];
+
+      // Handler for the start button: request microphone access and begin recording
+      startRecordButton.addEventListener("click", async () => {
+        try {
+          recordingStatusText.innerText = "Recording...";
+
+          if (navigator.mediaDevices.getUserMedia) {
+            const constraints = { audio: true };
+            const stream =
+              await navigator.mediaDevices.getUserMedia(constraints);
+
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.start();
+
+            // Collect audio data as it becomes available
+            mediaRecorder.ondataavailable = (event) => {
+              audioChunks.push(event.data);
+            };
+          } else {
+            throw new Error("getUserMedia is not supported in this browser");
+          }
+        } catch (error) {
+          console.error("Error accessing microphone:", error);
+          recordingStatusText.textContent = "Error accessing microphone";
+        }
+      });
+
+      // Handler for the stop button: finalize recording, upload, and display results
+      stopRecordButton.addEventListener("click", async () => {
+        try {
+          recordingStatusText.innerText = "Stopped Recording...";
+
+          mediaRecorder.stop();
+
+          mediaRecorder.onstop = async (e) => {
+            // Create a card to contain the audio and transcription
+            const clipCard = document.createElement("div");
+            clipCard.className = "clip-card";
+
+            const audioClip = document.createElement("audio");
+            audioClip.setAttribute("controls", "");
+            clipCard.appendChild(audioClip);
+
+            // Convert recorded chunks to a Blob and prepare upload
+            const blob = new Blob(audioChunks, {
+              type: "audio/mp3; codecs=opus",
+            });
+
+            const formData = new FormData();
+            formData.append("audio", blob);
+
+            // Send to backend for storage and transcription
+            const res = await axios
+              .post(`http://localhost:${PORT}/upload`, formData)
+              .catch((e) => {
+                console.error("upload error", e);
+                return null;
+              });
+
+            console.log("upload response", res);
+            let audiotext = "";
+            if (res && res.data) {
+              console.log("response data", res.data);
+              audiotext = res.data.result || res.data.transcript || "";
+            }
+            console.log("transcript text:", audiotext);
+
+            const textElement = document.createElement("p");
+            textElement.innerText = audiotext || "(no transcription)";
+            clipCard.appendChild(textElement);
+
+            // append the completed card so it's visible on the page
+            audioClipsContainer.appendChild(clipCard);
+
+            audioChunks = [];
+
+            const audioUrl = res && res.data ? res.data.link : "";
+            audioClip.src = audioUrl;
+          };
+          setTimeout(() => {
+            recordingStatusText.innerText = "Ready...";
+          }, 1000);
+        } catch (error) {
+          console.error("Error stopping recording:", error);
+          recordingStatusText.textContent = "Error stopping recording";
+        }
+      });
+      // });
+    </script>
       const PORT = 8888;
       const startRecordButton = document.getElementById("start-record");
       const stopRecordButton = document.getElementById("stop-record");
@@ -56,11 +179,12 @@
           mediaRecorder.stop();
 
           mediaRecorder.onstop = async (e) => {
-            // <audio controls></audio>
+            const clipCard = document.createElement("div");
+            clipCard.className = "clip-card";
+
             const audioClip = document.createElement("audio");
             audioClip.setAttribute("controls", "");
-
-            audioClipsContainer.appendChild(audioClip);
+            clipCard.appendChild(audioClip);
 
             const blob = new Blob(audioChunks, {
               type: "audio/mp3; codecs=opus",
@@ -69,26 +193,33 @@
             const formData = new FormData();
             formData.append("audio", blob);
 
-            const res = await axios.post(
-              `http://localhost:${PORT}/upload`,
-              formData,
-            );
+            const res = await axios
+              .post(`http://localhost:${PORT}/upload`, formData)
+              .catch((e) => {
+                console.error("upload error", e);
+                return null;
+              });
 
-            // console.log("res = ", res);
+            console.log("upload response", res);
+            let audiotext = "";
+            if (res && res.data) {
+              console.log("response data", res.data);
+              audiotext = res.data.result || res.data.transcript || "";
+            }
+            console.log("transcript text:", audiotext);
 
-            // add the transcribed text to the browser
-            const audiotext = res.data.result;
             const textElement = document.createElement("p");
-            textElement.innerText = audiotext;
-            audioClipsContainer.appendChild(textElement);
+            textElement.innerText = audiotext || "(no transcription)";
+            clipCard.appendChild(textElement);
+
+            // add the card to the page so the user can see it
+            audioClipsContainer.appendChild(clipCard);
 
             audioChunks = [];
 
-            // const audioUrl = window.URL.createObjectURL(blob);
-            const audioUrl = res.data.link;
+            const audioUrl = res && res.data ? res.data.link : "";
             audioClip.src = audioUrl;
           };
-
           setTimeout(() => {
             recordingStatusText.innerText = "Ready...";
           }, 1000);
